@@ -34,8 +34,8 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
         self._viewContext.parent = self._masterViewContext
        
         self._viewContext.automaticallyMergesChangesFromParent = true
-        self._viewContext.undoManager = nil
-        self._viewContext.shouldDeleteInaccessibleFaults = true
+        //self._viewContext.undoManager = nil
+        //self._viewContext.shouldDeleteInaccessibleFaults = true
         
         self._viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         self._masterViewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -47,8 +47,8 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         context.parent = self.viewContext
         context.automaticallyMergesChangesFromParent = true
-        context.undoManager = nil
-        context.shouldDeleteInaccessibleFaults = true
+        //context.undoManager = nil
+        //context.shouldDeleteInaccessibleFaults = true
         return context
     }
     
