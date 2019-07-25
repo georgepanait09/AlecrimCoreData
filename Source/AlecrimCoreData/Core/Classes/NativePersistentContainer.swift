@@ -32,17 +32,23 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
         
         self._masterViewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
         self._viewContext.parent = self._masterViewContext
+       
+        self._viewContext.automaticallyMergesChangesFromParent = true
+        self._viewContext.undoManager = nil
+        self._viewContext.shouldDeleteInaccessibleFaults = true
         
-        _viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        _masterViewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        self._viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        self._masterViewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
     
     internal override func newBackgroundContext() -> NSManagedObjectContext {
         let context = self.contextType.init(concurrencyType: .privateQueueConcurrencyType)
         
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        
         context.parent = self.viewContext
+        context.automaticallyMergesChangesFromParent = true
+        context.undoManager = nil
+        context.shouldDeleteInaccessibleFaults = true
         return context
     }
     
