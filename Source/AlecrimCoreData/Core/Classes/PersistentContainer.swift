@@ -35,7 +35,7 @@ public protocol PersistentStoreDescription {
     var shouldAddStoreAsynchronously: Bool { get set }
     var shouldMigrateStoreAutomatically: Bool { get set }
     var shouldInferMappingModelAutomatically: Bool { get set }
-
+    
     func setOption(_ option: NSObject?, forKey key: String)
     func setValue(_ value: NSObject?, forPragmaNamed name: String)
 }
@@ -48,6 +48,7 @@ internal protocol UnderlyingPersistentContainer: class {
     var persistentStoreCoordinator: NSPersistentStoreCoordinator { get }
     
     var viewContext: NSManagedObjectContext { get }
+    var masterViewContext: NSManagedObjectContext { get }
     var alc_persistentStoreDescriptions: [PersistentStoreDescription] { get set }
     
     func alc_loadPersistentStores(completionHandler block: @escaping (PersistentStoreDescription, Error?) -> Void)
@@ -55,16 +56,16 @@ internal protocol UnderlyingPersistentContainer: class {
     
     func configureDefaults(for context: NSManagedObjectContext)
     
-    init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type, directoryURL: URL)
+    init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type)
 }
 
 // MARK: -
 
 open class GenericPersistentContainer<ContextType: NSManagedObjectContext> {
-
+    
     // MARK: -
-
-    open class func directoryURL() -> URL {
+    
+    open class func defaultDirectoryURL() -> URL {
         if #available(iOS 10.0, macOSApplicationExtension 10.12, iOSApplicationExtension 10.0, tvOSApplicationExtension 10.0, watchOSApplicationExtension 3.0, *) {
             return NativePersistentContainer.defaultDirectoryURL()
         }
@@ -72,9 +73,9 @@ open class GenericPersistentContainer<ContextType: NSManagedObjectContext> {
             return CustomPersistentContainer.defaultDirectoryURL()
         }
     }
-
+    
     // MARK: -
-
+    
     private let underlyingPersistentContainer: UnderlyingPersistentContainer
     
     // MARK: -
@@ -82,6 +83,7 @@ open class GenericPersistentContainer<ContextType: NSManagedObjectContext> {
     public var name: String { return self.underlyingPersistentContainer.name }
     
     public var viewContext: ContextType { return self.underlyingPersistentContainer.viewContext as! ContextType }
+    public var masterViewContext: ContextType { return self.underlyingPersistentContainer.masterViewContext as! ContextType }
     
     public var managedObjectModel: NSManagedObjectModel { return self.underlyingPersistentContainer.managedObjectModel }
     
@@ -116,30 +118,23 @@ open class GenericPersistentContainer<ContextType: NSManagedObjectContext> {
             fatalError("Couldn't find managed object model in main bundle.")
             
         }
-
+        
         self.init(name: name, managedObjectModel: model, automaticallyLoadPersistentStores: automaticallyLoadPersistentStores)
     }
     
     
     public init(name: String, managedObjectModel model: NSManagedObjectModel, automaticallyLoadPersistentStores: Bool) {
-        let directoryURL = type(of: self).directoryURL()
-        
-        do {
-            try FileManager.default.createDirectory(atPath: directoryURL.path, withIntermediateDirectories: true, attributes: nil)
-        } catch {
-            AlecrimCoreDataError.handleError(error)
-        }
-        
         //
         if #available(iOS 10.0, macOSApplicationExtension 10.12, iOSApplicationExtension 10.0, tvOSApplicationExtension 10.0, watchOSApplicationExtension 3.0, *) {
-            self.underlyingPersistentContainer = NativePersistentContainer(name: name, managedObjectModel: model, contextType: ContextType.self, directoryURL: directoryURL)
+            self.underlyingPersistentContainer = NativePersistentContainer(name: name, managedObjectModel: model, contextType: ContextType.self)
         }
         else {
-            self.underlyingPersistentContainer = CustomPersistentContainer(name: name, managedObjectModel: model, contextType: ContextType.self, directoryURL: directoryURL)
+            self.underlyingPersistentContainer = CustomPersistentContainer(name: name, managedObjectModel: model, contextType: ContextType.self)
         }
         
         //
         self.underlyingPersistentContainer.configureDefaults(for: self.viewContext)
+        self.underlyingPersistentContainer.configureDefaults(for: self.masterViewContext)
         
         //
         if automaticallyLoadPersistentStores {

@@ -41,9 +41,9 @@ import CoreData
 
 private let _defaultDirectoryURL: URL = {
     #if os(tvOS)
-        let searchPathDirectory = FileManager.SearchPathDirectory.cachesDirectory
+    let searchPathDirectory = FileManager.SearchPathDirectory.cachesDirectory
     #else
-        let searchPathDirectory = FileManager.SearchPathDirectory.applicationSupportDirectory
+    let searchPathDirectory = FileManager.SearchPathDirectory.applicationSupportDirectory
     #endif
     
     var appDirectory: URL
@@ -56,11 +56,11 @@ private let _defaultDirectoryURL: URL = {
     }
     
     #if os(macOS)
-        guard let suffix = Bundle.main.infoDictionary?[kCFBundleExecutableKey as String] as? String ?? Bundle.main.executableURL?.lastPathComponent else {
-            fatalError("Could not get application name information from bundle \(Bundle.main).")
-        }
-        
-        appDirectory.appendPathComponent(suffix)
+    guard let suffix = Bundle.main.infoDictionary?[kCFBundleExecutableKey as String] as? String ?? Bundle.main.executableURL?.lastPathComponent else {
+        fatalError("Could not get application name information from bundle \(Bundle.main).")
+    }
+    
+    appDirectory.appendPathComponent(suffix)
     #endif
     
     do {
@@ -79,7 +79,7 @@ private let _defaultDirectoryURL: URL = {
 // MARK: -
 
 internal class CustomPersistentContainer: NSObject, UnderlyingPersistentContainer {
-
+    
     // MARK: -
     
     internal class func defaultDirectoryURL() -> URL { return _defaultDirectoryURL }
@@ -90,22 +90,26 @@ internal class CustomPersistentContainer: NSObject, UnderlyingPersistentContaine
     
     internal let name: String
     internal let viewContext: NSManagedObjectContext
+    internal let masterViewContext: NSManagedObjectContext
     internal var managedObjectModel: NSManagedObjectModel { return self.persistentStoreCoordinator.managedObjectModel }
     internal let persistentStoreCoordinator: NSPersistentStoreCoordinator
     internal var alc_persistentStoreDescriptions: [PersistentStoreDescription]
-
+    
     // MARK: -
     
-    internal required init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type, directoryURL: URL) {
+    internal required init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type) {
         self.contextType = contextType
         
         self.name = name
         self.persistentStoreCoordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         
-        self.viewContext = self.contextType.init(concurrencyType: .mainQueueConcurrencyType)
-        self.viewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
+        self.masterViewContext = self.contextType.init(concurrencyType: .privateQueueConcurrencyType)
+        self.masterViewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
         
-        self.alc_persistentStoreDescriptions = [CustomPersistentStoreDescription(url: directoryURL.appendingPathComponent("\(name).sqlite"))]
+        self.viewContext = self.contextType.init(concurrencyType: .mainQueueConcurrencyType)
+        self.viewContext.parent = self.masterViewContext
+        
+        self.alc_persistentStoreDescriptions = [CustomPersistentStoreDescription(url: type(of: self).defaultDirectoryURL().appendingPathComponent("\(name).sqlite"))]
     }
     
     // MARK: -
@@ -122,7 +126,7 @@ internal class CustomPersistentContainer: NSObject, UnderlyingPersistentContaine
         
         return context
     }
-
+    
     // MARK: -
     
     internal func alc_loadPersistentStores(completionHandler block: @escaping (PersistentStoreDescription, Error?) -> Void) {
@@ -142,7 +146,7 @@ internal class CustomPersistentContainer: NSObject, UnderlyingPersistentContaine
 // MARK: -
 
 extension NSPersistentStoreCoordinator {
-
+    
     fileprivate func alc_addPersistentStore(with storeDescription: PersistentStoreDescription, completionHandler block: @escaping (PersistentStoreDescription, Error?) -> Void) {
         if storeDescription.shouldAddStoreAsynchronously {
             DispatchQueue.global(qos: .background).async {

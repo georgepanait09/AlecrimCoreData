@@ -17,28 +17,32 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
     
     private let contextType: NSManagedObjectContext.Type
     private let _viewContext: NSManagedObjectContext
+    private let _masterViewContext: NSManagedObjectContext
     
     internal override var viewContext: NSManagedObjectContext { return self._viewContext }
+    internal var masterViewContext: NSManagedObjectContext { return self._masterViewContext }
     
-    internal required init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type, directoryURL: URL) {
+    internal required init(name: String, managedObjectModel model: NSManagedObjectModel, contextType: NSManagedObjectContext.Type) {
         self.contextType = contextType
+        
+        self._masterViewContext = self.contextType.init(concurrencyType: .privateQueueConcurrencyType)
         self._viewContext = self.contextType.init(concurrencyType: .mainQueueConcurrencyType)
         
         super.init(name: name, managedObjectModel: model)
-        self.persistentStoreDescriptions = [NSPersistentStoreDescription(url: directoryURL.appendingPathComponent("\(name).sqlite"))]
-        self._viewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
+        
+        self._masterViewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
+        self._viewContext.parent = self._masterViewContext
+        
+        _viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        _masterViewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
     
     internal override func newBackgroundContext() -> NSManagedObjectContext {
         let context = self.contextType.init(concurrencyType: .privateQueueConcurrencyType)
         
-        if let parentContext = self.viewContext.parent {
-            context.parent = parentContext
-        }
-        else {
-            context.persistentStoreCoordinator = self.persistentStoreCoordinator
-        }
-
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        context.parent = self.viewContext
         return context
     }
     
@@ -46,7 +50,7 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
     internal override func performBackgroundTask(_ block: @escaping (NSManagedObjectContext) -> Void) {
         fatalError()
     }
-
+    
     internal var alc_persistentStoreDescriptions: [PersistentStoreDescription] {
         get { return self.persistentStoreDescriptions }
         set {
@@ -63,10 +67,10 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
     }
     
     internal func configureDefaults(for context: NSManagedObjectContext) {
-        context.automaticallyMergesChangesFromParent = true
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        //        context.automaticallyMergesChangesFromParent = true
+        //        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
-
+    
 }
 
 // MARK: -

@@ -14,7 +14,7 @@
     extension FetchRequestController {
         
         @discardableResult
-        public func bind<CellType: UITableViewCell>(to tableView: UITableView, rowAnimation: UITableViewRowAnimation = .fade, sectionOffset: Int = 0, cellConfigurationHandler: ((CellType, IndexPath) -> Void)? = nil) -> Self {
+        public func bind<CellType: UITableViewCell>(to tableView: UITableView, rowAnimation: UITableView.RowAnimation = .fade, sectionOffset: Int = 0, cellConfigurationHandler: ((CellType, IndexPath) -> Void)? = nil) -> Self {
             let insertedSectionIndexes = NSMutableIndexSet()
             let deletedSectionIndexes = NSMutableIndexSet()
             let updatedSectionIndexes = NSMutableIndexSet()
