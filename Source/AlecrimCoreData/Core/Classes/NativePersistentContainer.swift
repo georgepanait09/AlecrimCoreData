@@ -33,7 +33,7 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
         self._masterViewContext.persistentStoreCoordinator = self.persistentStoreCoordinator
         self._viewContext.parent = self._masterViewContext
        
-        self._viewContext.automaticallyMergesChangesFromParent = true
+        //self._viewContext.automaticallyMergesChangesFromParent = true
         //self._viewContext.undoManager = nil
         //self._viewContext.shouldDeleteInaccessibleFaults = true
         
@@ -46,7 +46,7 @@ internal class NativePersistentContainer: NSPersistentContainer, UnderlyingPersi
         
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         context.parent = self.viewContext
-        context.automaticallyMergesChangesFromParent = true
+       // context.automaticallyMergesChangesFromParent = true
         //context.undoManager = nil
         //context.shouldDeleteInaccessibleFaults = true
         return context
